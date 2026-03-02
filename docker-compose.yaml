@@ -1,0 +1,11 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      - "POSTGRES_DB=netloog-db"
+      - "POSTGRES_USER=netlog-user"
+      - "POSTGRES_PASSWORD=netlog-password"
+    ports:
+      - "5432:5432"
+    command: [ "postgres", "-c", "log_statement=all" ]

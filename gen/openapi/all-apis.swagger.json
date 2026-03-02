@@ -1,0 +1,198 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "netlog/v1/netlog.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "netlogService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/netlog/create": {
+      "post": {
+        "summary": "Создание записи в сервисе (v1)",
+        "description": "Возвращает id",
+        "operationId": "netlog_v1_create",
+        "responses": {
+          "200": {
+            "description": "Успешный ответ",
+            "schema": {
+              "$ref": "#/definitions/v1CreateNetlogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "netlog",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1Netlog"
+            }
+          }
+        ],
+        "tags": [
+          "netlogService"
+        ]
+      }
+    },
+    "/v1/netlog/status": {
+      "get": {
+        "summary": "Проверка статуса сервиса (v1)",
+        "description": "Возвращает статус, версию и текущее время",
+        "operationId": "netlog_v1_get_status",
+        "responses": {
+          "200": {
+            "description": "Успешный ответ",
+            "schema": {
+              "$ref": "#/definitions/v1GetStatusResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "netlog"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "protobufNullValue": {
+      "type": "string",
+      "enum": [
+        "NULL_VALUE"
+      ],
+      "default": "NULL_VALUE",
+      "description": "`NullValue` is a singleton enumeration to represent the null value for the\n`Value` type union.\n\nThe JSON representation for `NullValue` is JSON `null`.\n\n - NULL_VALUE: Null value."
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1CreateNetlogResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1GetStatusResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "title": "\"ok\", \"degraded\", \"down\""
+        },
+        "version": {
+          "type": "string",
+          "title": "версия сервиса (api + app)"
+        },
+        "timestamp": {
+          "type": "string",
+          "title": "RFC3339"
+        }
+      }
+    },
+    "v1Netlog": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "int64",
+          "title": "ID заполняется только при ответе, при создании не указывается"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Время создания, если не указано - будет NOW()"
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Массив ключевых слов"
+        },
+        "parameters": {
+          "type": "object",
+          "title": "Параметры в формате JSON (структура может быть любой)"
+        },
+        "error": {
+          "type": "string",
+          "title": "Ошибка (если есть)"
+        },
+        "numBeforeAiFilter": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Количество элементов до AI фильтрации"
+        },
+        "numAfterAiFilter": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Количество элементов после AI фильтрации"
+        },
+        "resultBeforeAiFilter": {
+          "type": "object",
+          "title": "Результат до AI фильтрации"
+        },
+        "result": {
+          "type": "object",
+          "title": "Итоговый результат"
+        },
+        "clientId": {
+          "type": "string",
+          "title": "ID клиента (UUID)"
+        },
+        "appName": {
+          "type": "string",
+          "title": "Название приложения"
+        }
+      }
+    }
+  }
+}

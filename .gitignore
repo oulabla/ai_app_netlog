@@ -1,0 +1,7 @@
+bin/
+config/secret.yaml
+config/local.yaml
+coverage.out
+coverage.html
+.env
+.vscode/
