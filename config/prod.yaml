@@ -27,5 +27,7 @@ config:
     server_swagger_host:
         usage: Хост на который будет ходить Swagger при try it out
         group: server
-        value: "localhost:8080"
+        value: "netlog.tw1.ru:8080"
         type: string
+
+

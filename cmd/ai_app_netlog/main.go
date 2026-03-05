@@ -3,14 +3,17 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
@@ -109,8 +112,13 @@ func main() {
 	// ────────────────────────────────────────────────
 	// Подключаем зависимости DI
 	// ────────────────────────────────────────────────
-	pgConn := CreatePostgresConnection(ctx)
-	defer pgConn.Close(context.Background())
+	pgConn, err := CreatePostgres(ctx)
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Msg("pg connnection pool failed")
+	}
+	defer pgConn.Close()
 
 	repo := repository.NewRepository(pgConn)
 	appService := service.NewService(repo)
@@ -242,4 +250,44 @@ func CreatePostgresConnection(ctx context.Context) *pgx.Conn {
 	log.Info().Msgf("PostgreSQL версия: %s", version)
 
 	return pgConn
+}
+
+// Возвращает соединение и ошибку
+func CreatePostgres(ctx context.Context) (*pgxpool.Pool, error) {
+	pgURL := secret.Get(ctx, secret.PgCategory, secret.PgURL)
+
+	config, err := pgxpool.ParseConfig(pgURL)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось разобрать строку подключения: %w", err)
+	}
+
+	// Важные настройки пула (подбери под нагрузку)
+	config.MaxConns = 20 // максимум открытых соединений
+	config.MinConns = 2  // минимум всегда готовых
+	config.MaxConnLifetime = 45 * time.Minute
+	config.MaxConnIdleTime = 5 * time.Minute
+	config.HealthCheckPeriod = 1 * time.Minute // как часто проверять idle-соединения
+
+	// можно добавить AfterConnect для логирования или инициализации
+	// Правильная сигнатура AfterConnect
+	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
+		log.Info().Msg("Новое соединение в пуле создано")
+		return nil
+	}
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось создать пул: %w", err)
+	}
+
+	// Проверка подключения (опционально, но полезно при старте)
+	var version string
+	err = pool.QueryRow(ctx, "SELECT version()").Scan(&version)
+	if err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("тестовый запрос провалился: %w", err)
+	}
+	log.Info().Str("pg_version", version).Msg("PostgreSQL подключён успешно")
+
+	return pool, nil
 }

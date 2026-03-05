@@ -8,6 +8,8 @@ import (
 
 type repository interface {
 	Insert(ctx context.Context, netlog *datastruct.Netlog) (int64, error)
+	GetList(ctx context.Context, filter *datastruct.NetlogFilter) ([]*datastruct.Netlog, int64, error)
+	GetByID(ctx context.Context, id int64) (*datastruct.Netlog, error)
 }
 
 type Service struct {

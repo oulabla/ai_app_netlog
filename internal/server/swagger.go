@@ -3,12 +3,11 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/oulabla/ai_app_netlog/internal/assets"
 	"github.com/oulabla/ai_app_netlog/internal/config"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -48,16 +47,7 @@ func StartSwaggerServer(ctx context.Context) {
 }
 
 func serveMergedSwaggerJSON(ctx context.Context, w http.ResponseWriter) {
-	filePath := "gen/openapi/all-apis.swagger.json"
-
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		http.Error(w, "Cannot read merged OpenAPI file", http.StatusInternalServerError)
-		log.Err(err).
-			Msg(fmt.Sprintf("Failed to read %s: %v", filePath, err))
-
-		return
-	}
+	data, _ := assets.SwaggerFS.ReadFile("openapi/all-apis.swagger.json")
 
 	var doc map[string]interface{}
 	if err := json.Unmarshal(data, &doc); err != nil {
@@ -65,13 +55,12 @@ func serveMergedSwaggerJSON(ctx context.Context, w http.ResponseWriter) {
 		return
 	}
 
-	// Динамическая подмена host / schemes (очень полезно)
-	doc["host"] = config.GetString(ctx, config.K.ServerSwaggerHost) // например "localhost:8080"
+	doc["host"] = config.GetString(ctx, config.K.ServerSwaggerHost)
 	if doc["host"] == "" {
 		doc["host"] = "localhost:8080"
 	}
-	doc["schemes"] = []string{"http"} // или {"http","https"}
-	// doc["basePath"] = "/"           // если нужно
+
+	doc["schemes"] = []string{"http"}
 
 	modified, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {

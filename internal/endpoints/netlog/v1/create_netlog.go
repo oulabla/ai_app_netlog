@@ -8,8 +8,6 @@ import (
 
 	pb "github.com/oulabla/ai_app_netlog/gen/go/netlog/v1"
 	"github.com/oulabla/ai_app_netlog/internal/datastruct"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (c *Controller) CreateNetlog(ctx context.Context, req *pb.CreateNetlogRequest) (*pb.CreateNetlogResponse, error) {
@@ -29,7 +27,7 @@ func (c *Controller) CreateNetlog(ctx context.Context, req *pb.CreateNetlogReque
 
 	id, err := c.service.Create(ctx, netlog)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "invalid attempt")
+		return nil, err
 	}
 
 	return &pb.CreateNetlogResponse{

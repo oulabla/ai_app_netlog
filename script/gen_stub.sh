@@ -153,6 +153,22 @@ gofmt -w "$links_file" >/dev/null 2>&1 || true
 echo "→ links.go сгенерирован : ${links_file}"
 
 # =============================================================================
+# Копирование объединенного Swagger для embed
+# =============================================================================
+
+ASSETS_SWAGGER_DIR="internal/assets/openapi"
+GEN_SWAGGER_FILE="gen/openapi/all-apis.swagger.json"
+
+mkdir -p "$ASSETS_SWAGGER_DIR"
+
+if [ -f "$GEN_SWAGGER_FILE" ]; then
+    cp "$GEN_SWAGGER_FILE" "$ASSETS_SWAGGER_DIR/"
+    echo "→ Swagger copied to ${ASSETS_SWAGGER_DIR}/all-apis.swagger.json"
+else
+    echo "⚠ Swagger file not found: $GEN_SWAGGER_FILE"
+fi
+
+# =============================================================================
 # Финальная подсказка
 # =============================================================================
 

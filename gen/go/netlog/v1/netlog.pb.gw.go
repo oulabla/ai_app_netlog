@@ -57,20 +57,80 @@ func local_request_NetlogService_CreateNetlog_0(ctx context.Context, marshaler r
 
 }
 
-func request_NetlogService_GetStatus_0(ctx context.Context, marshaler runtime.Marshaler, client NetlogServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetStatusRequest
+func request_NetlogService_ListNetlog_0(ctx context.Context, marshaler runtime.Marshaler, client NetlogServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListNetlogRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := client.GetStatus(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.ListNetlog(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_NetlogService_GetStatus_0(ctx context.Context, marshaler runtime.Marshaler, server NetlogServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq GetStatusRequest
+func local_request_NetlogService_ListNetlog_0(ctx context.Context, marshaler runtime.Marshaler, server NetlogServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListNetlogRequest
 	var metadata runtime.ServerMetadata
 
-	msg, err := server.GetStatus(ctx, &protoReq)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.ListNetlog(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_NetlogService_GetNetlog_0(ctx context.Context, marshaler runtime.Marshaler, client NetlogServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetNetlogRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+	}
+
+	protoReq.Id, err = runtime.Int64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
+
+	msg, err := client.GetNetlog(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_NetlogService_GetNetlog_0(ctx context.Context, marshaler runtime.Marshaler, server NetlogServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetNetlogRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+	}
+
+	protoReq.Id, err = runtime.Int64(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
+
+	msg, err := server.GetNetlog(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -107,7 +167,7 @@ func RegisterNetlogServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 
 	})
 
-	mux.Handle("GET", pattern_NetlogService_GetStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_NetlogService_ListNetlog_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -115,12 +175,12 @@ func RegisterNetlogServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/netlog.v1.NetlogService/GetStatus", runtime.WithHTTPPathPattern("/v1/netlog/status"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/netlog.v1.NetlogService/ListNetlog", runtime.WithHTTPPathPattern("/v1/netlog/list"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_NetlogService_GetStatus_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_NetlogService_ListNetlog_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -128,7 +188,32 @@ func RegisterNetlogServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_NetlogService_GetStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_NetlogService_ListNetlog_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_NetlogService_GetNetlog_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/netlog.v1.NetlogService/GetNetlog", runtime.WithHTTPPathPattern("/v1/netlog/{id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_NetlogService_GetNetlog_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetlogService_GetNetlog_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -195,25 +280,47 @@ func RegisterNetlogServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 
 	})
 
-	mux.Handle("GET", pattern_NetlogService_GetStatus_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_NetlogService_ListNetlog_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/netlog.v1.NetlogService/GetStatus", runtime.WithHTTPPathPattern("/v1/netlog/status"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/netlog.v1.NetlogService/ListNetlog", runtime.WithHTTPPathPattern("/v1/netlog/list"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_NetlogService_GetStatus_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_NetlogService_ListNetlog_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_NetlogService_GetStatus_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_NetlogService_ListNetlog_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("GET", pattern_NetlogService_GetNetlog_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/netlog.v1.NetlogService/GetNetlog", runtime.WithHTTPPathPattern("/v1/netlog/{id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_NetlogService_GetNetlog_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_NetlogService_GetNetlog_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -223,11 +330,15 @@ func RegisterNetlogServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 var (
 	pattern_NetlogService_CreateNetlog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "netlog", "create"}, ""))
 
-	pattern_NetlogService_GetStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "netlog", "status"}, ""))
+	pattern_NetlogService_ListNetlog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "netlog", "list"}, ""))
+
+	pattern_NetlogService_GetNetlog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "netlog", "id"}, ""))
 )
 
 var (
 	forward_NetlogService_CreateNetlog_0 = runtime.ForwardResponseMessage
 
-	forward_NetlogService_GetStatus_0 = runtime.ForwardResponseMessage
+	forward_NetlogService_ListNetlog_0 = runtime.ForwardResponseMessage
+
+	forward_NetlogService_GetNetlog_0 = runtime.ForwardResponseMessage
 )

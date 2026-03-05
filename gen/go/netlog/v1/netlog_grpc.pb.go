@@ -22,7 +22,8 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	NetlogService_CreateNetlog_FullMethodName = "/netlog.v1.netlogService/CreateNetlog"
-	NetlogService_GetStatus_FullMethodName    = "/netlog.v1.netlogService/GetStatus"
+	NetlogService_ListNetlog_FullMethodName   = "/netlog.v1.netlogService/ListNetlog"
+	NetlogService_GetNetlog_FullMethodName    = "/netlog.v1.netlogService/GetNetlog"
 )
 
 // NetlogServiceClient is the client API for NetlogService service.
@@ -33,8 +34,10 @@ const (
 type NetlogServiceClient interface {
 	// CreateNetlog — создание записи
 	CreateNetlog(ctx context.Context, in *CreateNetlogRequest, opts ...grpc.CallOption) (*CreateNetlogResponse, error)
-	// GetStatus — простой health-check эндпоинт
-	GetStatus(ctx context.Context, in *GetStatusRequest, opts ...grpc.CallOption) (*GetStatusResponse, error)
+	// ListNetlog — получение списка записей с пагинацией и фильтрами
+	ListNetlog(ctx context.Context, in *ListNetlogRequest, opts ...grpc.CallOption) (*ListNetlogResponse, error)
+	// GetNetlog — получение записи по ID
+	GetNetlog(ctx context.Context, in *GetNetlogRequest, opts ...grpc.CallOption) (*GetNetlogResponse, error)
 }
 
 type netlogServiceClient struct {
@@ -55,10 +58,20 @@ func (c *netlogServiceClient) CreateNetlog(ctx context.Context, in *CreateNetlog
 	return out, nil
 }
 
-func (c *netlogServiceClient) GetStatus(ctx context.Context, in *GetStatusRequest, opts ...grpc.CallOption) (*GetStatusResponse, error) {
+func (c *netlogServiceClient) ListNetlog(ctx context.Context, in *ListNetlogRequest, opts ...grpc.CallOption) (*ListNetlogResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetStatusResponse)
-	err := c.cc.Invoke(ctx, NetlogService_GetStatus_FullMethodName, in, out, cOpts...)
+	out := new(ListNetlogResponse)
+	err := c.cc.Invoke(ctx, NetlogService_ListNetlog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *netlogServiceClient) GetNetlog(ctx context.Context, in *GetNetlogRequest, opts ...grpc.CallOption) (*GetNetlogResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetNetlogResponse)
+	err := c.cc.Invoke(ctx, NetlogService_GetNetlog_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +86,10 @@ func (c *netlogServiceClient) GetStatus(ctx context.Context, in *GetStatusReques
 type NetlogServiceServer interface {
 	// CreateNetlog — создание записи
 	CreateNetlog(context.Context, *CreateNetlogRequest) (*CreateNetlogResponse, error)
-	// GetStatus — простой health-check эндпоинт
-	GetStatus(context.Context, *GetStatusRequest) (*GetStatusResponse, error)
+	// ListNetlog — получение списка записей с пагинацией и фильтрами
+	ListNetlog(context.Context, *ListNetlogRequest) (*ListNetlogResponse, error)
+	// GetNetlog — получение записи по ID
+	GetNetlog(context.Context, *GetNetlogRequest) (*GetNetlogResponse, error)
 	mustEmbedUnimplementedNetlogServiceServer()
 }
 
@@ -88,8 +103,11 @@ type UnimplementedNetlogServiceServer struct{}
 func (UnimplementedNetlogServiceServer) CreateNetlog(context.Context, *CreateNetlogRequest) (*CreateNetlogResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateNetlog not implemented")
 }
-func (UnimplementedNetlogServiceServer) GetStatus(context.Context, *GetStatusRequest) (*GetStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
+func (UnimplementedNetlogServiceServer) ListNetlog(context.Context, *ListNetlogRequest) (*ListNetlogResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListNetlog not implemented")
+}
+func (UnimplementedNetlogServiceServer) GetNetlog(context.Context, *GetNetlogRequest) (*GetNetlogResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNetlog not implemented")
 }
 func (UnimplementedNetlogServiceServer) mustEmbedUnimplementedNetlogServiceServer() {}
 func (UnimplementedNetlogServiceServer) testEmbeddedByValue()                       {}
@@ -130,20 +148,38 @@ func _NetlogService_CreateNetlog_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _NetlogService_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetStatusRequest)
+func _NetlogService_ListNetlog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListNetlogRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NetlogServiceServer).GetStatus(ctx, in)
+		return srv.(NetlogServiceServer).ListNetlog(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: NetlogService_GetStatus_FullMethodName,
+		FullMethod: NetlogService_ListNetlog_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NetlogServiceServer).GetStatus(ctx, req.(*GetStatusRequest))
+		return srv.(NetlogServiceServer).ListNetlog(ctx, req.(*ListNetlogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NetlogService_GetNetlog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNetlogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NetlogServiceServer).GetNetlog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NetlogService_GetNetlog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NetlogServiceServer).GetNetlog(ctx, req.(*GetNetlogRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -160,8 +196,12 @@ var NetlogService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _NetlogService_CreateNetlog_Handler,
 		},
 		{
-			MethodName: "GetStatus",
-			Handler:    _NetlogService_GetStatus_Handler,
+			MethodName: "ListNetlog",
+			Handler:    _NetlogService_ListNetlog_Handler,
+		},
+		{
+			MethodName: "GetNetlog",
+			Handler:    _NetlogService_GetNetlog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

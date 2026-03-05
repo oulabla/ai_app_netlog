@@ -34,26 +34,49 @@ service netlogService {
     };
   }
 
-  // GetStatus — простой health-check эндпоинт
-  rpc GetStatus (GetStatusRequest) returns (GetStatusResponse) {
+  // ListNetlog — получение списка записей с пагинацией и фильтрами
+  rpc ListNetlog (ListNetlogRequest) returns (ListNetlogResponse) {
     option (google.api.http) = {
-      get: "/v1/netlog/status"
+      post: "/v1/netlog/list",
+      body: "*"
     };
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      summary     : "Проверка статуса сервиса (v1)"
-      description : "Возвращает статус, версию и текущее время"
-      operation_id: "netlog_v1_get_status"
-      tags        : "netlog"
+      summary     : "Получение списка записей netlog с пагинацией"
+      description : "Пагинация по last_id (cursor-based), сортировка DESC по id"
+      operation_id: "netlog_v1_list"
+      responses   : {
+        key   : "200"
+        value : {
+          description : "Список записей и курсор для следующей страницы"
+        }
+      }
+    };
+  }
+
+    // GetNetlog — получение записи по ID
+  rpc GetNetlog (GetNetlogRequest) returns (GetNetlogResponse) {
+    option (google.api.http) = {
+      get: "/v1/netlog/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary     : "Получение записи netlog по ID"
+      description : "Возвращает одну запись по первичному ключу"
+      operation_id: "netlog_v1_get"
       responses   : {
         key   : "200"
         value : {
           description : "Успешный ответ"
         }
       }
+      responses   : {
+        key   : "404"
+        value : {
+          description : "Запись не найдена"
+        }
+      }
     };
   }
 
-  // Здесь будут добавляться остальные методы...
 }
 
 
@@ -101,13 +124,40 @@ message Netlog {
     string app_name = 11;  
 }
 
-message GetStatusRequest {
-  // Можно добавить поля, если нужно (например, для проверки конкретного компонента)
+message ListNetlogRequest {
+  // Пагинация
+  optional int64 last_id = 1;           // если > 0 → возвращать записи где id < last_id
+  int32 limit = 2;                      // обязательно, рекомендуемый диапазон 20..200
+
+  // Фильтры (все optional)
+  optional string client_id     = 10;   // uuid как строка
+  optional string app_name      = 11;
+
+  repeated string keywords      = 12;   // содержит ВСЕ указанные слова (array @>)
+
+  optional bool has_error       = 13;   // true → error != null, false → error == null
+
+  optional int32 min_before_ai  = 14;
+  optional int32 max_before_ai  = 15;
+
+  optional google.protobuf.Timestamp from_time = 16;
+  optional google.protobuf.Timestamp to_time   = 17;
 }
 
-message GetStatusResponse {
-  string status    = 1;  // "ok", "degraded", "down"
-  string version   = 2;  // версия сервиса (api + app)
-  string timestamp = 3;  // RFC3339
-  // map<string, string> components = 4;  // опционально: статус подкомпонентов
+message ListNetlogResponse {
+  repeated Netlog items = 1;
+
+  // Курсор для следующей страницы
+  optional int64 next_last_id = 2;      // id самой старой записи в items (или пусто, если больше нет)
+
+  // Полезно для UI
+  bool has_more = 3;                    // true, если вероятно есть ещё записи
+}
+
+message GetNetlogRequest {
+  int64 id = 1; // ID записи
+}
+
+message GetNetlogResponse {
+  Netlog netlog = 1;
 }

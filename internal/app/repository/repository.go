@@ -8,6 +8,7 @@ import (
 
 type connection interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
 type Repository struct {
