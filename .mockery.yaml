@@ -1,0 +1,15 @@
+packages:
+  github.com/oulabla/ai_app_netlog/internal/app/service:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "{{.InterfaceName | snakecase}}_mock.go"
+      pkgname: mocks
+    interfaces:
+      Repository: {}
+  github.com/oulabla/ai_app_netlog/internal/endpoints/netlog/v1:
+    config:
+      dir: "{{.InterfaceDir}}/mocks"
+      filename: "{{.InterfaceName | snakecase}}_mock.go"
+      pkgname: mocks
+    interfaces:
+      Service: {}

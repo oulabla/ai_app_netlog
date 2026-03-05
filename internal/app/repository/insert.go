@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/oulabla/ai_app_netlog/internal/datastruct"
 )
@@ -32,7 +31,7 @@ func (r *Repository) Insert(ctx context.Context, netlog *datastruct.Netlog) (int
 	).Scan(&id)
 
 	if err != nil {
-		return 0, fmt.Errorf("ошибка вставки: %w", err)
+		return 0, datastruct.WrapPgError(err)
 	}
 
 	return id, nil

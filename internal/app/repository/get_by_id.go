@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/oulabla/ai_app_netlog/internal/datastruct"
@@ -47,7 +46,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*datastruct.Netlog,
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil // либо можно вернуть кастомную ErrNotFound
 		}
-		return nil, fmt.Errorf("GetByID scan failed: %w", err)
+		return nil, datastruct.WrapPgError(err)
 	}
 
 	return e, nil

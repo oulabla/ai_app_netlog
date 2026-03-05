@@ -159,6 +159,7 @@ func main() {
 
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(metric.UnaryServerInterceptor()),
+		grpc.UnaryInterceptor(server.UnaryErrorInterceptor),
 	)
 
 	server.RegisterAllGRPC(grpcServer)

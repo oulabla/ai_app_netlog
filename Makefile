@@ -25,7 +25,7 @@ CURRENT_DATE := $(shell date +%Y-%m-%d)
 # Инструменты и версии
 # =============================================================================
 GOOSE_VERSION          := v3.27.0
-BUF_VERSION            := v1.66.0          # ← можно обновить до v1.66.0 при желании
+BUF_VERSION            := v1.66.0
 YQ_VERSION             := v4.52.4
 PROTOC_GEN_GO          := v1.36.0
 PROTOC_GEN_GO_GRPC     := v1.5.1
@@ -46,34 +46,41 @@ GOOSE    := $(BIN_DIR)/goose
 # =============================================================================
 .DEFAULT_GOAL := help
 .PHONY: help init tools buf-update generate generate-config proto-generate scaffold clean test lint tidy add-service build run \
-        migrate migrate-new migrate-up migrate-down migrate-status migrate-reset goose
+        migrate migrate-new migrate-up migrate-down migrate-status migrate-reset goose \
+        mocks mocks-quick update-mockery-config generate-mocks list-mocks clean-mocks
 
 help:
 	@echo ""
 	@echo "Доступные команды:"
 	@echo ""
-	@echo "  make init              Инициализация проекта (tools + buf-update + tidy + config + generate)"
-	@echo "  make tools             Установить все инструменты в ./bin"
-	@echo "  make buf-update        Обновить buf-зависимости (deps)"
-	@echo "  make generate          Генерация proto + stubs + config keys (без установки инструментов и без buf dep update)"
-	@echo "  make generate-config   Только config keys"
-	@echo "  make proto-generate    Только protobuf + grpc-gateway + openapi (без buf dep update)"
-	@echo "  make build             Сборка → ./bin/$(PROJECT_NAME)"
-	@echo "  make run               Запуск"
-	@echo "  make test              Тесты + покрытие"
-	@echo "  make lint              golangci-lint"
-	@echo "  make tidy              go mod tidy"
-	@echo "  make clean             Очистка"
+	@echo "Основные:"
+	@echo "  make init              → Инициализация (tools + buf-update + tidy + config + generate)"
+	@echo "  make tools             → Установить все инструменты в ./bin"
+	@echo "  make generate          → Генерация proto + stubs + config keys"
+	@echo "  make build             → Сборка → ./bin/$(PROJECT_NAME)"
+	@echo "  make run               → Запуск"
+	@echo "  make test              → Тесты + покрытие"
+	@echo "  make lint              → golangci-lint"
+	@echo "  make tidy              → go mod tidy"
+	@echo "  make clean             → Очистка"
 	@echo ""
-	@echo "  make add-service users      → proto/users/v1/..."
-	@echo "  make add-service users v2   → proto/users/v2/..."
+	@echo "Сервисы:"
+	@echo "  make add-service users      → Создать прото-файл с заглушкой proto/users/v1/..."
+	@echo "  make add-service users v2   → Создать прото-файл с заглушкой proto/users/v2/..."
+	@echo ""
+	@echo "Моки (mockery):"
+	@echo "  make mocks                  → Обновить .mockery.yaml + сгенерировать все моки (рекомендуется)"
+	@echo "  make mocks-quick            → Сгенерировать моки без обновления конфига (быстрее)"
+	@echo "  make update-mockery-config  → Только обновить .mockery.yaml"
+	@echo "  make list-mocks             → Показать найденные интерфейсы и их мок-файлы"
+	@echo "  make clean-mocks            → Удалить все *_mock.go файлы"
 	@echo ""
 	@echo "Миграции (goose):"
-	@echo "  make migrate new      <имя_миграции>     → создать новую миграцию"
-	@echo "  make migrate up                          → применить все ожидающие"
+	@echo "  make migrate new      <имя_миграции>     → создать новую"
+	@echo "  make migrate up                          → применить ожидающие"
 	@echo "  make migrate down                        → откатить последнюю"
-	@echo "  make migrate status                      → показать статус миграций"
-	@echo "  make migrate reset                       → откатить ВСЕ миграции (с подтверждением)"
+	@echo "  make migrate status                      → статус"
+	@echo "  make migrate reset                       → откатить ВСЕ (с подтверждением)"
 	@echo ""
 
 # =============================================================================
@@ -97,7 +104,7 @@ buf: $(BIN_DIR)
 	  "https://github.com/bufbuild/buf/releases/latest/download/buf-Linux-x86_64" \
 	  -o $(BUF)
 	chmod +x $(BUF)
-	@echo "buf latest установлен → $$( $(BUF) --version )"
+	@echo "buf latest → $$( $(BUF) --version )"
 
 yq: $(BIN_DIR)
 	curl -sSL \
@@ -127,7 +134,7 @@ goose: $(BIN_DIR)
 	@$(GOOSE) version
 
 # =============================================================================
-# Buf зависимости — отдельная цель, не вызывается автоматически
+# Buf зависимости
 # =============================================================================
 buf-update:
 	@if [ ! -x "$(BUF)" ]; then \
@@ -138,7 +145,7 @@ buf-update:
 	PATH="$(CURDIR)/bin:$$PATH" $(BUF) dep update $(PROTO_DIR)
 
 # =============================================================================
-# Генерация (теперь без автоматической установки и buf-update)
+# Генерация
 # =============================================================================
 generate: proto-generate scaffold generate-config
 	@echo "→ Генерация завершена"
@@ -160,28 +167,81 @@ scaffold:
 		bash script/gen_stub.sh
 
 # =============================================================================
+# Mocks (mockery)
+# =============================================================================
+MOCKERY_CONFIG := .mockery.yaml
+
+update-mockery-config:
+	@echo "→ Updating mockery configuration (.mockery.yaml)..."
+	@bash script/update-mockery-config.sh
+	@echo "→ Конфиг обновлён"
+
+mocks: update-mockery-config
+	@echo "→ Генерация моков (с актуальным конфигом)..."
+	@if [ ! -x "$(MOCKERY)" ]; then \
+		echo "❌ mockery не найден → запустите: make mockery"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(MOCKERY_CONFIG)" ]; then \
+		echo "❌ $(MOCKERY_CONFIG) не найден → сначала: make update-mockery-config"; \
+		exit 1; \
+	fi
+	@$(MOCKERY) --config $(MOCKERY_CONFIG)
+	@echo "→ Моки сгенерированы ✓"
+
+mocks-quick:
+	@echo "→ Быстрая генерация моков (без обновления конфига)..."
+	@if [ ! -x "$(MOCKERY)" ]; then \
+		echo "❌ mockery не найден → запустите: make mockery"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(MOCKERY_CONFIG)" ]; then \
+		echo "❌ $(MOCKERY_CONFIG) не найден → сначала: make update-mockery-config"; \
+		exit 1; \
+	fi
+	@$(MOCKERY) --config $(MOCKERY_CONFIG)
+	@echo "→ Быстрая генерация завершена"
+
+list-mocks:
+	@echo "Найденные *Mock интерфейсы и их мок-файлы:"
+	@find ./internal -type f -name "*Mock.go" -not -path "*/mocks/*" | while read -r iface_file; do \
+		iface=$$(grep -E "^type\s+[A-Za-z0-9_]+Mock\s+interface" "$$iface_file" | sed -E 's/^type\s+([A-Za-z0-9_]+)Mock.*/\1/'); \
+		if [ -n "$$iface" ]; then \
+			mock_file="$$(dirname "$$iface_file")/mocks/$${iface}_mock.go"; \
+			if [ -f "$$mock_file" ]; then \
+				echo "  ✔  $$iface\t→ $$mock_file"; \
+			else \
+				echo "  ✗  $$iface\t(мок ещё не сгенерирован)"; \
+			fi; \
+		fi; \
+	done
+	@echo ""
+	@echo "Всего мок-файлов: $$(find ./internal -type f -name "*_mock.go" | wc -l)"
+
+clean-mocks:
+	@echo "→ Удаление всех сгенерированных *_mock.go файлов..."
+	@find ./internal -type f -name "*_mock.go" -delete
+	@echo "→ Удалено $$(find ./internal -type f -name "*_mock.go" 2>/dev/null | wc -l) файлов"
+	@echo "→ Рекомендуется: make update-mockery-config && make mocks"
+
+# =============================================================================
 # Остальные цели
 # =============================================================================
 tidy:
 	go mod tidy
 
 test: tidy
-	@echo "→ Запуск тестов с покрытием..."
-	@if [ -z "$(COVER_PKGS)" ]; then \
-		go test -v -race ./...; \
-		exit 0; \
-	fi
+	@echo "→ Тесты с покрытием"
 	go test -v -race \
-		-coverpkg=$(COVER_PKGS) \
+		-coverpkg=$(shell go list ./internal/... | grep -vE '/(metric|server|script)$$' | tr '\n' ',' | sed 's/,$$//') \
 		-coverprofile=coverage.out \
 		-covermode=atomic \
 		./...
-	@go tool cover -func=coverage.out | grep total || echo "→ Покрытие 0.0%"
-	@go tool cover -html=coverage.out -o coverage.html 2>/dev/null || true
+	@go tool cover -func=coverage.out | grep total
 
 lint:
 	@if [ ! -x "$(GOLANGCI_LINT)" ]; then \
-		echo "→ golangci-lint не найден. Запусти: make tools"; \
+		echo "→ golangci-lint не найден. Запустите: make tools"; \
 		exit 1; \
 	fi
 	PATH="$(BIN_DIR):$$PATH" $(GOLANGCI_LINT) run --timeout=5m --color=always
@@ -219,13 +279,6 @@ migrate:
 		echo "Ошибка: переменная DB_URL не задана"; \
 		echo "Добавьте в .env строку вида:"; \
 		echo "  DB_URL=postgres://user:password@localhost:5432/dbname?sslmode=disable"; \
-		echo ""; \
-		echo "Доступные команды миграций:"; \
-		echo "  make migrate new      <имя>"; \
-		echo "  make migrate up"; \
-		echo "  make migrate down"; \
-		echo "  make migrate status"; \
-		echo "  make migrate reset"; \
 		exit 1; \
 	fi
 	@:

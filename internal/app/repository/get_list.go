@@ -102,7 +102,7 @@ func (r *Repository) GetList(ctx context.Context, filter *datastruct.NetlogFilte
 
 	rows, err = r.conn.Query(ctx, query, args...)
 	if err != nil {
-		return nil, 0, fmt.Errorf("query failed: %w", err)
+		return nil, 0, datastruct.WrapPgError(err)
 	}
 	defer rows.Close()
 
@@ -124,7 +124,7 @@ func (r *Repository) GetList(ctx context.Context, filter *datastruct.NetlogFilte
 			&e.AppName,
 		)
 		if err != nil {
-			return nil, 0, fmt.Errorf("scan failed: %w", err)
+			return nil, 0, datastruct.WrapPgError(err)
 		}
 
 		items = append(items, e)
@@ -132,7 +132,7 @@ func (r *Repository) GetList(ctx context.Context, filter *datastruct.NetlogFilte
 	}
 
 	if rows.Err() != nil {
-		return nil, 0, rows.Err()
+		return nil, 0, datastruct.WrapPgError(rows.Err())
 	}
 
 	// Если ничего не нашли — lastID остаётся 0
